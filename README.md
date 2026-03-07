@@ -25,7 +25,7 @@ A web application where the user uploads bug screenshots, the AI (LLaMA 4 Scout 
 ### 1. Prerequisites
 - Python 3.8+
 - A [Groq API Key](https://console.groq.com/)
-- A JIRA account (API Token, Email, and Project Key)
+- A JIRA account ([API Token](https://id.atlassian.com/manage-profile/security/api-tokens), Email, and Project Key)
 
 ### 2. Installation
 ```bash
