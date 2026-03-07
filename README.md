@@ -47,6 +47,9 @@ python -m src.main
 ```
 The app will be available at `http://localhost:8080`.
 
+## 🌐 Deployment
+For hosting the app on **GitHub** and **Vercel**, please refer to the [Deployment Guide](DEPLOYMENT.md) for step-by-step instructions.
+
 ## 📁 Project Structure
 
 - `src/`: Backend logic (FastAPI, Groq, JIRA).
