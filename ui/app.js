@@ -5,11 +5,20 @@
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const state = {
-    selectedFiles: [], // Changed from selectedFile to selectedFiles array
+    selectedFiles: [],
     currentReport: null,
     isEditing: false,
     isAnalyzing: false,
+    settings: {
+        groq_api_key: '',
+        jira_url: '',
+        jira_email: '',
+        jira_api_token: '',
+        jira_project: ''
+    }
 };
+
+const SETTINGS_STORAGE_KEY = 'bugpilot-settings';
 
 // ─── DOM Elements ─────────────────────────────────────────────────────────────
 const $ = (sel) => document.querySelector(sel);
@@ -264,9 +273,12 @@ async function analyzeBug() {
     try {
         const formData = new FormData();
         state.selectedFiles.forEach(file => {
-            formData.append('screenshots', file); // Note: plural 'screenshots'
+            formData.append('screenshots', file);
         });
         formData.append('notes', els.testerNotes.value || '');
+
+        // Include Groq API Key from local settings
+        formData.append('groq_api_key', els.settingGroqKey.value.trim());
 
         const response = await fetch('/api/analyze-bug', {
             method: 'POST',
@@ -419,6 +431,12 @@ async function createJiraTicket() {
             });
         }
 
+        // Include JIRA credentials from local settings
+        formData.append('jira_url', els.settingJiraUrl.value.trim());
+        formData.append('jira_email', els.settingJiraEmail.value.trim());
+        formData.append('jira_api_token', els.settingJiraToken.value.trim());
+        formData.append('jira_project', els.settingJiraProject.value.trim());
+
         const response = await fetch('/api/create-jira-ticket', {
             method: 'POST',
             body: formData,
@@ -447,56 +465,50 @@ els.createJiraBtn.addEventListener('click', createJiraTicket);
 // ─── Settings ─────────────────────────────────────────────────────────────────
 async function loadSettings() {
     try {
-        const response = await fetch('/api/settings');
-        const data = await response.json();
+        // 1. Try to load from localStorage first (User's private keys)
+        const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+        let settings = {};
 
-        // Populate plain-text fields always
-        // Populate plain-text fields always - with safety checks
-        if (els.settingJiraUrl) els.settingJiraUrl.value = data.jira_url || '';
-        if (els.settingJiraEmail) els.settingJiraEmail.value = data.jira_email || '';
-        if (els.settingJiraProject) els.settingJiraProject.value = data.jira_project || '';
-
-        // Populate masked tokens if available, otherwise leave blank
-        if (els.settingGroqKey) {
-            els.settingGroqKey.value = data.groq_api_key || '';
-            els.settingGroqKey.placeholder = 'Enter your GROQ API Key';
+        if (saved) {
+            settings = JSON.parse(saved);
+        } else {
+            // 2. Fallback to server defaults (e.g. Vercel environment variables)
+            const response = await fetch('/api/settings');
+            settings = await response.json();
         }
 
-        if (els.settingJiraToken) {
-            els.settingJiraToken.value = data.jira_api_token || '';
-            els.settingJiraToken.placeholder = 'Enter your JIRA API Token';
-        }
+        state.settings = settings;
 
-        // Update JIRA status badge based on backend state
-        updateJiraStatus(data.jira_configured);
+        // Populate fields
+        if (els.settingJiraUrl) els.settingJiraUrl.value = settings.jira_url || '';
+        if (els.settingJiraEmail) els.settingJiraEmail.value = settings.jira_email || '';
+        if (els.settingJiraProject) els.settingJiraProject.value = settings.jira_project || '';
+        if (els.settingGroqKey) els.settingGroqKey.value = settings.groq_api_key || '';
+        if (els.settingJiraToken) els.settingJiraToken.value = settings.jira_api_token || '';
+
+        // Update JIRA status badge
+        const isJiraConfigured = !!(settings.jira_url && settings.jira_email && settings.jira_api_token && settings.jira_project);
+        updateJiraStatus(isJiraConfigured);
     } catch (error) {
         console.error('Failed to load settings:', error);
     }
 }
 
 async function saveSettings() {
-    // Verify all necessary elements exist before proceeding
     if (!els.settingGroqKey || !els.settingJiraUrl || !els.settingJiraEmail || !els.settingJiraToken || !els.settingJiraProject) {
-        console.error('One or more settings elements are missing from the DOM:', {
-            groqKey: !!els.settingGroqKey,
-            jiraUrl: !!els.settingJiraUrl,
-            jiraEmail: !!els.settingJiraEmail,
-            jiraToken: !!els.settingJiraToken,
-            jiraProject: !!els.settingJiraProject
-        });
-        showToast('UI Error: Some settings fields are missing. Please refresh the page.', 'error');
+        showToast('UI Error: Missing settings fields.', 'error');
         return false;
     }
 
-    const groqValue = els.settingGroqKey.value.trim();
-    const tokenValue = els.settingJiraToken.value.trim();
+    const newSettings = {
+        groq_api_key: els.settingGroqKey.value.trim(),
+        jira_url: els.settingJiraUrl.value.trim(),
+        jira_email: els.settingJiraEmail.value.trim(),
+        jira_api_token: els.settingJiraToken.value.trim(),
+        jira_project: els.settingJiraProject.value.trim()
+    };
 
-    // If it contains asterisks, it's the masked string from the backend => unchanged.
-    const groqPayload = (groqValue !== '' && groqValue.includes('*')) ? '*OMIT*' : groqValue;
-    const tokenPayload = (tokenValue !== '' && tokenValue.includes('*')) ? '*OMIT*' : tokenValue;
-
-    // Validate: all fields must be filled
-    if (!groqValue || !els.settingJiraUrl.value.trim() || !els.settingJiraEmail.value.trim() || !tokenValue || !els.settingJiraProject.value.trim()) {
+    if (!Object.values(newSettings).every(val => val !== '')) {
         showToast('Please fill in all Settings fields before saving.', 'error');
         return false;
     }
@@ -504,30 +516,24 @@ async function saveSettings() {
     els.saveSettingsBtn.disabled = true;
 
     try {
-        const formData = new FormData();
-        formData.append('groq_api_key', groqPayload);
-        formData.append('jira_url', els.settingJiraUrl.value.trim());
-        formData.append('jira_email', els.settingJiraEmail.value.trim());
-        formData.append('jira_api_token', tokenPayload);
-        formData.append('jira_project', els.settingJiraProject.value.trim());
+        // 1. Save to localStorage (Primary storage)
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(newSettings));
+        state.settings = newSettings;
 
-        const response = await fetch('/api/settings', {
+        // 2. Also notify backend (Optional, helps server-side connection testing)
+        const formData = new FormData();
+        Object.entries(newSettings).forEach(([key, val]) => formData.append(key, val));
+
+        await fetch('/api/settings', {
             method: 'POST',
             body: formData,
         });
 
-        const data = await response.json();
-
-        if (data.success) {
-            showToast('Settings saved successfully!', 'success');
-            await loadSettings(); // Reload to update placeholders
-            return true;
-        } else {
-            showToast(data.message || 'Failed to save settings.', 'error');
-            return false;
-        }
+        showToast('Settings saved to browser successfully!', 'success');
+        updateJiraStatus(true);
+        return true;
     } catch (error) {
-        showToast(`Network error: ${error.message}`, 'error');
+        showToast(`Error saving settings: ${error.message}`, 'error');
         return false;
     } finally {
         els.saveSettingsBtn.disabled = false;
@@ -536,32 +542,23 @@ async function saveSettings() {
 
 /** Clear all fields locally AND persist the empty state to the backend. */
 async function resetSettings() {
-    // 0. Also reset the Bug Analyzer state for a complete fresh start
     resetAnalysis();
 
-    // 1. Clear all fields in the UI immediately - with safety checks
-    if (els.settingGroqKey) {
-        els.settingGroqKey.value = '';
-        els.settingGroqKey.placeholder = 'Enter your GROQ API Key';
-    }
+    // 1. Clear UI
+    if (els.settingGroqKey) els.settingGroqKey.value = '';
     if (els.settingJiraUrl) els.settingJiraUrl.value = '';
     if (els.settingJiraEmail) els.settingJiraEmail.value = '';
-    if (els.settingJiraToken) {
-        els.settingJiraToken.value = '';
-        els.settingJiraToken.placeholder = 'Enter your JIRA API Token';
-    }
+    if (els.settingJiraToken) els.settingJiraToken.value = '';
     if (els.settingJiraProject) els.settingJiraProject.value = '';
 
-    // Hide any previous connection result panel
     if (els.connectionResult) els.connectionResult.classList.add('hidden');
-    if (els.connectionMessage) els.connectionMessage.textContent = '';
-
-    // 2. Update status badge immediately (don't wait for the network)
     updateJiraStatus(false);
 
-    // 3. Persist the cleared state to the backend directly.
-    //    We bypass saveSettings() validation by calling the API ourselves
-    //    with all-empty strings — the backend _apply helper treats "" as a clear.
+    // 2. Clear localStorage
+    localStorage.removeItem(SETTINGS_STORAGE_KEY);
+    state.settings = {};
+
+    // 3. Clear server side if possible
     try {
         const formData = new FormData();
         formData.append('groq_api_key', '');
@@ -569,23 +566,18 @@ async function resetSettings() {
         formData.append('jira_email', '');
         formData.append('jira_api_token', '');
         formData.append('jira_project', '');
-
         await fetch('/api/settings', { method: 'POST', body: formData });
-    } catch (error) {
-        console.error('Failed to clear settings on backend:', error);
-    }
+    } catch (e) { }
 
     showToast('Settings reset successfully.', 'info');
 }
 
 async function testConnection() {
-    // Verify elements exist
     if (!els.settingJiraUrl || !els.settingJiraEmail || !els.settingJiraToken || !els.settingJiraProject) {
-        showToast('UI Error: Some JIRA fields are missing.', 'error');
+        showToast('UI Error: Missing JIRA fields.', 'error');
         return;
     }
 
-    // Validate required fields
     if (!els.settingJiraUrl.value || !els.settingJiraEmail.value || !els.settingJiraToken.value || !els.settingJiraProject.value) {
         showToast('Please fill in all JIRA fields before testing connection.', 'error');
         return;
@@ -595,18 +587,15 @@ async function testConnection() {
     els.testConnectionBtn.innerHTML = `<div class="spinner" style="width:18px;height:18px;border-width:2px;"></div> Testing...`;
 
     try {
-        const tokenValue = els.settingJiraToken.value.trim();
-        const tokenPayload = (tokenValue !== '' && tokenValue.includes('*')) ? '*OMIT*' : tokenValue;
-
         const formData = new FormData();
         formData.append('jira_url', els.settingJiraUrl.value.trim());
         formData.append('jira_email', els.settingJiraEmail.value.trim());
-        formData.append('jira_api_token', tokenPayload);
+        formData.append('jira_api_token', els.settingJiraToken.value.trim());
         formData.append('jira_project', els.settingJiraProject.value.trim());
 
         const response = await fetch('/api/test-connection', {
             method: 'POST',
-            body: formData
+            body: formData,
         });
         const data = await response.json();
 

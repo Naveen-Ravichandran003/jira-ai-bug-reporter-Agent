@@ -86,15 +86,21 @@ async def api_test_connection(
     """Test JIRA connection using provided credentials (or saved if omitted)."""
     settings = load_settings()
 
-    # If the token is masked (contains '*') or *OMIT*, use the real saved token
-    if jira_api_token == "*OMIT*" or "*" in jira_api_token:
-        jira_api_token = settings.get("jira_api_token", "")
+    # Priority: 1. Request Body, 2. Server Environment Variables
+    final_url = jira_url or settings.get("jira_url", "")
+    final_email = jira_email or settings.get("jira_email", "")
+    final_token = jira_api_token
+    final_project = jira_project or settings.get("jira_project", "")
+
+    # If the token is masked (contains '*') or *OMIT*, use the server's saved token
+    if not final_token or final_token == "*OMIT*" or "*" in final_token:
+        final_token = settings.get("jira_api_token", "")
 
     result = test_connection(
-        jira_url=jira_url,
-        email=jira_email,
-        api_token=jira_api_token,
-        project=jira_project,
+        jira_url=final_url,
+        email=final_email,
+        api_token=final_token,
+        project=final_project,
     )
     return result
 
@@ -105,12 +111,17 @@ async def api_test_connection(
 async def api_analyze_bug(
     screenshots: List[UploadFile] = File(...),
     notes: str = Form(""),
+    groq_api_key: str = Form(""),
 ):
     """Upload multiple screenshots + tester notes → AI generates structured bug report."""
     settings = load_settings()
-    api_key = settings.get("groq_api_key", "")
+    
+    # Priority: 1. Request Body, 2. Server Environment Variables
+    final_api_key = groq_api_key
+    if not final_api_key or final_api_key == "*OMIT*" or "*" in final_api_key:
+        final_api_key = settings.get("groq_api_key", "")
 
-    if not api_key:
+    if not final_api_key:
         return {
             "success": False,
             "message": "Groq API key not configured. Go to Settings and add your API key.",
@@ -126,7 +137,7 @@ async def api_analyze_bug(
             })
 
         report = analyze_bug(
-            api_key=api_key,
+            api_key=final_api_key,
             images_data=images_data,
             tester_notes=notes,
         )
@@ -146,16 +157,24 @@ async def api_create_jira_ticket(
     actual_result: str = Form(""),
     severity: str = Form("Medium"),
     screenshots: List[UploadFile] = File(None),
+    jira_url: str = Form(""),
+    jira_email: str = Form(""),
+    jira_api_token: str = Form(""),
+    jira_project: str = Form(""),
 ):
     """Submit the reviewed bug report to JIRA."""
     settings = load_settings()
 
-    if not all([
-        settings.get("jira_url"),
-        settings.get("jira_email"),
-        settings.get("jira_api_token"),
-        settings.get("jira_project"),
-    ]):
+    # Priority: 1. Request Body, 2. Server Environment Variables
+    final_url = jira_url or settings.get("jira_url", "")
+    final_email = jira_email or settings.get("jira_email", "")
+    final_token = jira_api_token
+    final_project = jira_project or settings.get("jira_project", "")
+
+    if not final_token or final_token == "*OMIT*" or "*" in final_token:
+        final_token = settings.get("jira_api_token", "")
+
+    if not all([final_url, final_email, final_token, final_project]):
         return {
             "success": False,
             "message": "JIRA is not fully configured. Go to Settings and complete the configuration.",
@@ -182,10 +201,10 @@ async def api_create_jira_ticket(
                 })
 
     result = create_issue(
-        jira_url=settings["jira_url"],
-        email=settings["jira_email"],
-        api_token=settings["jira_api_token"],
-        project=settings["jira_project"],
+        jira_url=final_url,
+        email=final_email,
+        api_token=final_token,
+        project=final_project,
         issue_type=settings.get("jira_issue_type", "Bug"),
         bug_report=bug_report,
         attachments=attachments,

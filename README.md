@@ -15,6 +15,8 @@ A web application where the user uploads bug screenshots, the AI (LLaMA 4 Scout 
 ## ✨ Features
 
 - **AI Bug Analysis**: Uses LLaMA 4 Scout Vision (via Groq) to analyze multiple screenshots simultaneously and extract technical details.
+- **Multiple Screenshots**: Upload and analyze multiple images for a single bug report.
+- **Multi-User Support (BYOK)**: Settings are stored in your browser's local storage. Teammates and clients can use the same hosted app with their own separate JIRA and Groq keys.
 - **Structured Reports**: Automatically generates Title, Description, Steps to Reproduce, Expected vs. Actual results, and Severity.
 - **JIRA Integration**: Create JIRA tickets directly from the app with just one click.
 - **Attachment Support**: Automatically attaches all uploaded screenshots to the JIRA ticket.
