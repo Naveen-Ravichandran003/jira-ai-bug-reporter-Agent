@@ -1,6 +1,6 @@
-# 🐞 BugPilot AI Agent
-
 BugPilot is an AI-powered QA copilot that transforms screenshots and tester notes into structured, professional bug reports and automatically creates JIRA tickets.
+
+**🌐 Live App: [https://jira-ai-bug-reporter-agent.vercel.app/](https://jira-ai-bug-reporter-agent.vercel.app/)**
 
 ## ⚠️ The Problem
 **Every tester takes screenshots of bugs but then spends 10-15 minutes writing up the Jira ticket manually.** They switch between the screenshots, the browser, Jira, and their notes. It's repetitive, slow, and error-prone. What if you could just drop your screenshots and have AI generate the entire bug report and push it directly to Jira?
