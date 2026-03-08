@@ -10,6 +10,16 @@ BugPilot is an AI-powered QA copilot that transforms screenshots and tester note
 ## 🏗️ What We're Building
 A web application where the user uploads bug screenshots, the AI (LLaMA 4 Scout vision model on Groq) analyzes what's wrong across the evidence, generates a structured bug report, and with one click pushes it to Jira as a real ticket with all screenshots attached. The user provides their Groq API key and Jira credentials in a settings panel.
 
+## 🏗️ Architecture
+
+```mermaid
+graph LR
+    User([Tester]) -->|Screenshots| UI[BugPilot UI]
+    UI -->|AI Analysis| Groq[Groq AI]
+    Groq -->|Bug Report| UI
+    UI -->|Create Ticket| Jira[Jira Cloud]
+```
+
 ---
 
 ## ✨ Features
