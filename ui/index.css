@@ -188,8 +188,8 @@ body::before {
     width: 28px;
     height: 28px;
     margin-right: 12px;
-    color: var(--accent-primary);
-    filter: drop-shadow(0 0 8px var(--accent-primary-glow));
+    color: var(--accent-danger);
+    filter: drop-shadow(0 0 8px var(--accent-danger-glow));
     transition: transform var(--transition-base);
 }
 
@@ -617,12 +617,47 @@ body::before {
     font-family: var(--font-sans);
     color: var(--text-primary);
     opacity: 0.9;
-    /* Slightly lower opacity for typed text */
     background: var(--bg-input);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-sm);
     transition: all var(--transition-fast);
     outline: none;
+}
+
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-icon input {
+    padding-right: 2.5rem;
+    /* Space for the icon */
+}
+
+.visibility-toggle {
+    position: absolute;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all var(--transition-fast);
+}
+
+.visibility-toggle:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.visibility-toggle svg {
+    width: 18px;
+    height: 18px;
 }
 
 .form-group input:focus,
@@ -643,8 +678,8 @@ body::before {
 .form-group input::placeholder,
 .form-group textarea::placeholder {
     color: var(--text-muted);
-    opacity: 0.5;
-    /* Significantly lower opacity for placeholder text */
+    opacity: 0.3;
+    /* Further lowered opacity for placeholder text */
 }
 
 .form-grid {
