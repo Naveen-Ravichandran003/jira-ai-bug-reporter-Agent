@@ -181,25 +181,15 @@ body::before {
     letter-spacing: -0.02em;
 }
 
-.brand-logo {
+.header-brand {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    margin-right: 12px;
-    color: var(--accent-danger);
-    filter: drop-shadow(0 0 8px var(--accent-danger-glow));
     transition: transform var(--transition-base);
+    cursor: default;
 }
 
-.brand-logo svg {
-    width: 100%;
-    height: 100%;
-}
-
-.header-brand:hover .brand-logo {
-    transform: scale(1.1) rotate(5deg);
+.header-brand:hover {
+    transform: scale(1.02);
 }
 
 .theme-toggle-btn {
