@@ -105,7 +105,7 @@ function switchTab(tabName) {
     });
 
     // Persist active tab across refreshes
-    localStorage.setItem('bugpilot-tab', tabName);
+    sessionStorage.setItem('bugpilot-tab', tabName);
 }
 
 els.tabBtns.forEach((btn) => {
@@ -480,8 +480,8 @@ els.createJiraBtn.addEventListener('click', createJiraTicket);
 // ─── Settings ─────────────────────────────────────────────────────────────────
 async function loadSettings() {
     try {
-        // 1. Try to load from localStorage first (User's private keys)
-        const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+        // 1. Try to load from sessionStorage first (User's private keys)
+        const saved = sessionStorage.getItem(SETTINGS_STORAGE_KEY);
         let settings = {};
 
         if (saved) {
@@ -502,7 +502,7 @@ async function loadSettings() {
         if (els.settingJiraToken) els.settingJiraToken.value = settings.jira_api_token || '';
 
         // Update JIRA status badge based on VERIFICATION, not just configuration
-        const isVerified = localStorage.getItem(VERIFIED_STORAGE_KEY) === 'true';
+        const isVerified = sessionStorage.getItem(VERIFIED_STORAGE_KEY) === 'true';
         updateJiraStatus(isVerified);
     } catch (error) {
         console.error('Failed to load settings:', error);
@@ -531,8 +531,8 @@ async function saveSettings() {
     els.saveSettingsBtn.disabled = true;
 
     try {
-        // 1. Save to localStorage (Primary storage)
-        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(newSettings));
+        // 1. Save to sessionStorage (Primary storage)
+        sessionStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(newSettings));
         state.settings = newSettings;
 
         // 2. Also notify backend (Optional, helps server-side connection testing)
@@ -552,7 +552,7 @@ async function saveSettings() {
         } else {
             showToast('Settings saved to browser successfully!', 'success');
             // Reset verification status when settings change
-            localStorage.setItem(VERIFIED_STORAGE_KEY, 'false');
+            sessionStorage.setItem(VERIFIED_STORAGE_KEY, 'false');
             updateJiraStatus(false);
         }
         return true;
@@ -578,9 +578,9 @@ async function resetSettings() {
     if (els.connectionResult) els.connectionResult.classList.add('hidden');
     updateJiraStatus(false);
 
-    // 2. Clear localStorage
-    localStorage.removeItem(SETTINGS_STORAGE_KEY);
-    localStorage.removeItem(VERIFIED_STORAGE_KEY);
+    // 2. Clear sessionStorage
+    sessionStorage.removeItem(SETTINGS_STORAGE_KEY);
+    sessionStorage.removeItem(VERIFIED_STORAGE_KEY);
     state.settings = {};
 
     // 3. Clear server side if possible
@@ -645,7 +645,7 @@ async function testConnection() {
         els.connectionMessage.className = `connection-message ${data.success ? 'success' : 'error'}`;
 
         // PERSIST verification status
-        localStorage.setItem(VERIFIED_STORAGE_KEY, data.success ? 'true' : 'false');
+        sessionStorage.setItem(VERIFIED_STORAGE_KEY, data.success ? 'true' : 'false');
         updateJiraStatus(data.success);
         showToast(data.message, data.success ? 'success' : 'error');
     } catch (error) {
@@ -682,7 +682,7 @@ if (els.resetSettingsBtn) {
 const jiraInputs = [els.settingJiraUrl, els.settingJiraEmail, els.settingJiraToken, els.settingJiraProject];
 jiraInputs.forEach(input => {
     input.addEventListener('input', () => {
-        localStorage.setItem(VERIFIED_STORAGE_KEY, 'false');
+        sessionStorage.setItem(VERIFIED_STORAGE_KEY, 'false');
         updateJiraStatus(false);
     });
 });
@@ -711,7 +711,7 @@ function showToast(message, type = 'info') {
 
 // ─── Theme Toggling ───────────────────────────────────────────────────────────
 function initTheme() {
-    const savedTheme = localStorage.getItem('bugpilot-theme') || 'dark';
+    const savedTheme = sessionStorage.getItem('bugpilot-theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
 }
 
@@ -719,7 +719,7 @@ function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('bugpilot-theme', newTheme);
+    sessionStorage.setItem('bugpilot-theme', newTheme);
 }
 
 els.themeToggleBtn.addEventListener('click', toggleTheme);
@@ -742,7 +742,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Restore the last active tab (default to 'analyzer')
-    const savedTab = localStorage.getItem('bugpilot-tab') || 'analyzer';
+    const savedTab = sessionStorage.getItem('bugpilot-tab') || 'analyzer';
     switchTab(savedTab);
 
     // Clear all form fields immediately on load to prevent browser autocomplete
