@@ -551,9 +551,6 @@ async function saveSettings() {
             }
         } else {
             showToast('Settings saved to browser successfully!', 'success');
-            // Reset verification status when settings change
-            sessionStorage.setItem(VERIFIED_STORAGE_KEY, 'false');
-            updateJiraStatus(false);
         }
         return true;
     } catch (error) {
