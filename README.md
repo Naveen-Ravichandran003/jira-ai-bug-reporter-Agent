@@ -1,4 +1,4 @@
-BugPilot is an AI-powered QA copilot that transforms screenshots and tester notes into structured, professional bug reports and automatically creates JIRA tickets.
+BugPilot is an AI-powered QA Agent that transforms screenshots and tester notes into structured, professional bug reports and automatically creates JIRA tickets.
 
 **🌐 Live App: [https://jira-ai-bug-reporter-agent.vercel.app/](https://jira-ai-bug-reporter-agent.vercel.app/)**
 
